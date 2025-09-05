@@ -10,13 +10,13 @@ const port = 3000;
 app.use(bodyParser.json());
 
 // // Setup Postgres connection (update with your own credentials)
-// const pool = new Pool({
-//   user: "postgres",       
-//   host: "localhost",
-//   database: "ridesdb",     // make sure this database exists
-//   password: "password",    // change if needed
-//   port: 5432,
-// });
+const pool = new Pool({
+user: "postgres",       
+host: "localhost",
+database: "ridesdb",     // make sure this database exists
+password: "password",    // change if needed
+port: 5432,
+});
 
 // API endpoint for ride request
 app.post("/api/ride-request", async (req, res) => {
