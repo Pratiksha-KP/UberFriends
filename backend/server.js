@@ -151,21 +151,39 @@ app.post("/api/book-ride", async (req, res) => {
 });
 
 // Update driver status
+// backend/server.js
+
 app.put("/api/drivers/:driver_id/status", async (req, res) => {
   const { driver_id } = req.params;
   const { status } = req.body;
 
-  if (!['available', 'not_available'].includes(status)) {
-    return res.status(400).json({ error: "Invalid status. Must be 'available' or 'not_available'" });
+  if (status !== 'available') {
+    // For this endpoint's logic, we only care about setting status to 'available'
+    return res.status(400).json({ error: "This endpoint can only be used to set status to 'available'" });
   }
 
   try {
-    const result = await pool.query('UPDATE drivers SET status = $1 WHERE id = $2 RETURNING *', [status, driver_id]);
-    if (result.rows.length === 0) {
+    // First, get the driver's current status
+    const currentStatusResult = await pool.query('SELECT status, driver_name FROM drivers WHERE id = $1', [driver_id]);
+
+    if (currentStatusResult.rows.length === 0) {
       return res.status(404).json({ error: "Driver not found" });
     }
-    console.log(`📱 Driver ${result.rows[0].driver_name} status updated to: ${status}`);
-    res.json({ success: true, message: `Driver status updated to ${status}` });
+
+    const driver = currentStatusResult.rows[0];
+    
+    // Check if the status is already 'available'
+    if (driver.status === 'available') {
+      console.log(`📱 Driver ${driver.driver_name} is already available. No update needed.`);
+      return res.json({ success: true, message: `You are already online and available for rides.` });
+    }
+    
+    // If not, update the status
+    await pool.query('UPDATE drivers SET status = $1 WHERE id = $2', [status, driver_id]);
+    
+    console.log(`📱 Driver ${driver.driver_name} status updated to: ${status}`);
+    res.json({ success: true, message: `Status updated successfully! You are now online.` });
+
   } catch (err) {
     console.error("❌ Error updating driver status:", err);
     res.status(500).json({ error: "Failed to update driver status" });
