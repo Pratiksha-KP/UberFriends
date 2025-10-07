@@ -1,70 +1,52 @@
 // client.js
-import fetch from "node-fetch";
-import readline from "readline";
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
+import WebSocket from 'ws';
+import fetch from 'node-fetch';
+
+const CLIENT_ID = process.argv[2] || 'C1'; // Run with: node client.js C1
+const CLIENT_NAME = `User ${CLIENT_ID}`;
+const NOTIFY_SERVER = 'ws://localhost:9000';
+const API_SERVER = 'http://localhost:8000';
+
+const ws = new WebSocket(NOTIFY_SERVER);
+
+ws.on('open', () => {
+    console.log('Connected to notification server.');
+    // Register with the notification server
+    ws.send(JSON.stringify({ type: 'register', id: `client_${CLIENT_ID}` }));
 });
 
-// Ask a question with Promise
-function askQuestion(query) {
-  return new Promise((resolve) => rl.question(query, resolve));
-}
-
-async function main() {
-  console.log("\n🚖 Welcome to UberFriends CLI 🚖");
-  console.log("=================================\n");
-
-  try {
-    // Collect ride request details
-    const user_id = await askQuestion("👤 Enter your User ID: ");
-    const user_name = await askQuestion("🙍 Enter your Name: ");
-    const contact_number = await askQuestion("📞 Enter your Contact Number: ");
-    const source_location = parseInt(
-      await askQuestion("📍 Enter Pickup Location (integer): ")
-    );
-    const dest_location = parseInt(
-      await askQuestion("🏁 Enter Drop Location (integer): ")
-    );
-
-    rl.close();
-
-    if (isNaN(source_location) || isNaN(dest_location)) {
-      console.error("❌ Locations must be integers!");
-      return;
-    }
-
-    // Make API call to server
-    console.log("\n📡 Sending ride request to server...\n");
-
-    const response = await fetch("http://localhost:3000/api/book-ride", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id,
-        user_name,
-        contact_number,
-        source_location,
-        dest_location,
-      }),
-    });
-
-    const data = await response.json();
-
-    // Display response
-    console.log("\n🚀 Server Response:");
-    console.log(JSON.stringify(data, null, 2));
-
-    if (data.success && data.driver_details) {
-      console.log(
-        `\n🎉 Driver ${data.driver_details.driver_name} (Vehicle: ${data.driver_details.vehicle_id}) assigned! 🚗`
-      );
+ws.on('message', (data) => {
+    const msg = JSON.parse(data.toString());
+    if (msg.type === 'ride_assigned') {
+        console.log('\n================================');
+        console.log('🎉 RIDE ASSIGNED! 🎉');
+        console.log(`Driver: ${msg.driver.driver_name}`);
+        console.log(`Vehicle: ${msg.driver.vehicle_id}`);
+        console.log('================================\n');
     } else {
-      console.log("\n⌛ Waiting for driver assignment...");
+        console.log(`[Notification]: ${msg.message}`);
     }
-  } catch (err) {
-    console.error("❌ Error:", err);
-  }
-}
+});
 
-main();
+ws.on('close', () => console.log('Disconnected from notification server.'));
+
+// Simulate booking a ride after 3 seconds
+setTimeout(async () => {
+    console.log('Requesting a ride...');
+    try {
+        const response = await fetch(`${API_SERVER}/book-ride`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: CLIENT_ID,
+                user_name: CLIENT_NAME,
+                source_location: 10,
+                dest_location: 50
+            })
+        });
+        const data = await response.json();
+        console.log(`API Response: ${data.message}`);
+    } catch (e) {
+        console.error('Failed to book ride:', e.message);
+    }
+}, 3000);
