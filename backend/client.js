@@ -1,17 +1,15 @@
 // client.js
 import WebSocket from 'ws';
-import fetch from 'node-fetch';
 
-const CLIENT_ID = process.argv[2] || 'C1'; // Run with: node client.js C1
-const CLIENT_NAME = `User ${CLIENT_ID}`;
+const CLIENT_ID = process.argv[2] || 'C1';
 const NOTIFY_SERVER = 'ws://localhost:9000';
-const API_SERVER = 'http://localhost:8000';
+
+console.log(`👂 Client listener ${CLIENT_ID} starting...`);
 
 const ws = new WebSocket(NOTIFY_SERVER);
 
 ws.on('open', () => {
-    console.log('Connected to notification server.');
-    // Register with the notification server
+    console.log(`✅ Client ${CLIENT_ID} connected to notification server. Waiting for notifications...`);
     ws.send(JSON.stringify({ type: 'register', id: `client_${CLIENT_ID}` }));
 });
 
@@ -28,25 +26,5 @@ ws.on('message', (data) => {
     }
 });
 
-ws.on('close', () => console.log('Disconnected from notification server.'));
-
-// Simulate booking a ride after 3 seconds
-setTimeout(async () => {
-    console.log('Requesting a ride...');
-    try {
-        const response = await fetch(`${API_SERVER}/book-ride`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: CLIENT_ID,
-                user_name: CLIENT_NAME,
-                source_location: 10,
-                dest_location: 50
-            })
-        });
-        const data = await response.json();
-        console.log(`API Response: ${data.message}`);
-    } catch (e) {
-        console.error('Failed to book ride:', e.message);
-    }
-}, 3000);
+ws.on('close', () => console.log('Disconnected from notification service.'));
+ws.on('error', (err) => console.error('WebSocket error:', err.message));
