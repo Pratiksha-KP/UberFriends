@@ -3,7 +3,7 @@ import WebSocket from 'ws';
 import fetch from 'node-fetch';
 
 const NOTIFY_SERVER = 'ws://localhost:9000';
-const AUTH_SERVER = 'http://localhost:7000';
+const AUTH_SERVER = 'http://localhost:7001';
 const API_SERVER = 'http://localhost:8000';
 
 // --- Main execution ---

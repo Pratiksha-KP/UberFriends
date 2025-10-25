@@ -4,11 +4,12 @@ import bodyParser from 'body-parser';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { pool } from './db.js';
+import cors from 'cors'; 
 
 const app = express();
 app.use(bodyParser.json());
-
-const PORT = 7000;
+app.use(cors()); // Enable CORS
+const PORT = 7001;
 const JWT_SECRET = 'uberfriends_secret_key'; // change in production
 
 // 🧾 SIGNUP - Register new user
